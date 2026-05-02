@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ChevronRight, ChevronLeft, BarChart3 } from "lucide-react";
 
 const DEFAULT_WEIGHTS: Record<string, number> = {
-  VOO: 20, "0050": 15, QQQ: 15, "00631L": 15, VEA: 7.5, VWO: 7.5,
-  IBIT: 3, IAU: 2, SGOV: 10, Cash: 5,
+  VOO: 20, "0050": 15, QQQ: 15, "00631L": 10, VEA: 5, VWO: 5,
+  IBIT: 2, IAU: 8, SGOV: 15, Cash: 5,
 };
 
 const DEFAULT_PER_ASSET_MIN: Record<string, number> = Object.fromEntries(
