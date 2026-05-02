@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 資產配置比例最佳化工具
 
-## Getting Started
+基於現代投資組合理論（MPT）與五桶框架的互動式投資組合最佳化工具。
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+## 功能概覽
+
+- **五桶框架約束**：核心、攻擊、分散、另類、防禦，各桶設定比例上下限
+- **MPT 最佳化**：隨機搜尋演算法（80,000 次迭代），支援最大夏普比率、最大報酬、最小風險三種目標
+- **歷史資料擷取**：自 Yahoo Finance 拉取月頻調整後收盤價，自動計算年化算術報酬與波動率
+- **代理延伸（Proxy Extension）**：上市不足 10 年的 ETF（如 IBIT）自動銜接代理指標歷史（BTC-USD），確保統計樣本充足；支援自動偵測 Yahoo Finance 分類類別並比對代理
+- **相關係數矩陣**：10 年 Pearson 月頻相關係數，可視覺化編輯，支援代理回填標示
+- **有效前緣互動**：41 個前緣點位，點選任一點即時更新配置明細
+- **台幣/美金比例約束**：排除現金緩衝資產，僅以股票型資產計算幣別比例
+- **可調無風險利率**：預設 2.0%（台幣定存），可自行調整為美元短債殖利率（~4.5%）
+
+## 技術架構
+
+| 層次 | 技術 |
+|------|------|
+| 框架 | Next.js 16 (App Router) |
+| 語言 | TypeScript 5 |
+| UI | Tailwind CSS v4 + shadcn/ui |
+| 圖表 | Recharts 3 |
+| 最佳化 | 自製隨機搜尋（`lib/optimizer.ts`） |
+| 資料來源 | Yahoo Finance（`app/api/historical/route.ts`） |
+
+## 快速開始
 
 ```bash
+# 安裝依賴
+npm install
+
+# 啟動開發伺服器（預設 http://localhost:3000）
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 建置生產版本
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 使用流程
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**步驟 1 — 設定資產**
+- 預設 10 個資產（VOO、0050、QQQ、00631L、VEA、VWO、IBIT、IAU、SGOV、台幣現金）
+- 可新增自訂 ticker，或調整各資產的預期報酬、波動率、最低比例
+- 點擊「抓取歷史資料」自動從 Yahoo Finance 更新報酬與波動率，並重新計算相關係數矩陣
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**步驟 2 — 設定約束**
+- 選擇最佳化目標（最大夏普 / 最大報酬 / 最小風險）
+- 設定無風險利率（影響夏普比率計算）
+- 設定台幣股票資產比例範圍、各桶比例上下限
 
-## Learn More
+**步驟 3 — 查看結果**
+- 三項核心指標對比（預期報酬、波動率、夏普比率）
+- 有效前緣散點圖 + 所有點位清單，點選任一點查看對應配置
+- 比例對比長條圖（目前 vs 最佳）
+- 具體調整建議清單
 
-To learn more about Next.js, take a look at the following resources:
+## 方法論說明
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 算術報酬 vs CAGR
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+本工具使用**算術年化報酬**（各月報酬率 × 12），而非一般公告的 CAGR（複合年化成長率）。Markowitz 均值-方差最佳化要求算術期望值，算術報酬永遠高於 CAGR：
 
-## Deploy on Vercel
+```
+算術報酬 ≈ CAGR + σ² / 2
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+例：0050 官方 CAGR ≈ 12.8%、σ = 19% → 算術報酬 ≈ 14.6%
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 槓桿 ETF 波動率修正
+
+日再平衡槓桿 ETF（如 00631L）的月頻標準差低估真實風險，因月頻抽樣無法捕捉日內波動耗損（volatility drag）。歷史波動率抓取後自動乘以 **1.4** 修正係數。
+
+### 無風險利率
+
+- **台幣投資人**：建議使用台幣定存利率 ~2.0%
+- **美金為基礎幣別**：可調整為美國短債殖利率 ~4.5%
+
+使用過高的無風險利率（如 4.5%）會顯著壓低夏普比率，造成數值比直覺認知低很多。
+
+## 預設資產
+
+| 代號 | 名稱 | 桶別 | 幣別 | 預期報酬 | 波動率 |
+|------|------|------|------|----------|--------|
+| VOO | S&P 500 | 核心 | USD | 12.0% | 14.5% |
+| 0050 | 台灣 50 | 核心 | TWD | 14.5% | 19.0% |
+| QQQ | Nasdaq 100 | 攻擊 | USD | 15.0% | 21.0% |
+| 00631L | 台灣 50 正 2 | 攻擊 | TWD | 31.0% | 45.0% |
+| VEA | 已開發市場（美國除外） | 分散 | USD | 6.0% | 16.5% |
+| VWO | 新興市場 | 分散 | USD | 7.5% | 20.0% |
+| IBIT | 比特幣 ETF | 另類 | USD | 20.0% | 75.0% |
+| IAU | 黃金 ETF | 另類 | USD | 8.0% | 15.0% |
+| SGOV | 極短期美國國債 | 防禦 | USD | 4.0% | 1.5% |
+| Cash | 台幣現金/活存 | 防禦 | TWD | 1.5% | 0.1% |
+
+所有預期報酬均為算術年化報酬，以歷史資料為基礎估計，不代表未來績效。
+
+## 免責聲明
+
+本工具僅供教育與輔助決策使用，不構成投資建議。所有預期報酬與波動率均為歷史估計值，未來績效可能有顯著差異。投資決策請諮詢合格理財顧問。
+
+## License
+
+MIT

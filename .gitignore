@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude / AI agent config (internal use only)
+CLAUDE.md
+AGENTS.md
